@@ -28,12 +28,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() && 
-             (request.auth.token.email == "jiyuu2050@gmail.com" && request.auth.token.email_verified == true);
-    }
-
-    function isStudent(studentId) {
-      return isAuthenticated() && (request.auth.uid == studentId || (get(/databases/$(database)/documents/students/$(studentId)).data.uid == request.auth.uid));
+      return isAuthenticated() && (
+        (request.auth.token.email == "jiyuu2050@gmail.com" && request.auth.token.email_verified == true) ||
+        get(/databases/$(database)/documents/config/admin).data.activeAdminUid == request.auth.uid
+      );
     }
 
     function isValidStudent(data) {
@@ -55,7 +53,8 @@ service cloud.firestore {
 
     match /config/admin {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create: if request.resource.data.password_proof == "0000";
+      allow update: if isAdmin() || (request.resource.data.password_proof == resource.data.adminPassword);
     }
 
     match /students/{studentId} {

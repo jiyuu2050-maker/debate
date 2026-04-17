@@ -31,6 +31,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [studentProfile, setStudentProfile] = useState<Student | null>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [activeAdminUid, setActiveAdminUid] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,6 +50,15 @@ function AuthProvider({ children }: { children: ReactNode }) {
       }
     }, (error) => {
       console.warn('Lesson fetch failed:', error);
+    });
+
+    // Listen to admin config for session check
+    const unsubAdmin = onSnapshot(doc(db, 'config', 'admin'), (docSnap) => {
+      if (docSnap.exists()) {
+        setActiveAdminUid(docSnap.data().activeAdminUid || null);
+      }
+    }, (error) => {
+      console.warn('Admin config fetch failed:', error);
     });
 
     const unsubAuth = onAuthStateChanged(auth, async (u) => {
@@ -83,11 +93,14 @@ function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       unsubAuth();
       unsubLesson();
+      unsubAdmin();
       clearTimeout(timeout);
     };
   }, []);
 
-  const isAdmin = user?.email === 'jiyuu2050@gmail.com';
+  const isAdmin = 
+    user?.email === 'jiyuu2050@gmail.com' || 
+    (!!user && !!activeAdminUid && user.uid === activeAdminUid);
 
   return (
     <AuthContext.Provider value={{ user, studentProfile, lesson, loading, isAdmin }}>

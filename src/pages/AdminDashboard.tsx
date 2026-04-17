@@ -32,9 +32,9 @@ export default function AdminDashboard() {
     // Fetch global config
     const unsub = onSnapshot(doc(db, 'config', 'admin'), (snap) => {
        if (snap.exists()) {
-          setStoredAdminPassword(snap.data().adminPassword || import.meta.env.VITE_INITIAL_ADMIN_PASSWORD || '');
+          setStoredAdminPassword(snap.data().adminPassword || import.meta.env.VITE_INITIAL_ADMIN_PASSWORD || '0000');
        } else {
-          setStoredAdminPassword(import.meta.env.VITE_INITIAL_ADMIN_PASSWORD || '');
+          setStoredAdminPassword(import.meta.env.VITE_INITIAL_ADMIN_PASSWORD || '0000');
        }
     });
     return unsub;
@@ -68,9 +68,8 @@ export default function AdminDashboard() {
           </div>
           <h2 className="text-2xl font-black text-gray-800 mb-2">권한이 없습니다</h2>
           <p className="text-gray-500 mb-8 leading-relaxed">
-            관리자 대시보드는 지정된 관리자 계정<br/>
-            <span className="font-bold text-[#555843]">(jiyuu2050@gmail.com)</span><br/>
-            으로만 접근할 수 있습니다.
+            관리자 대시보드에 접근할 수 없습니다.<br/>
+            메인 화면에서 올바른 암호를 입력해 주세요.
           </p>
           <button
             onClick={() => navigate('/')}
@@ -81,10 +80,13 @@ export default function AdminDashboard() {
           
           {user && (
             <button 
-              onClick={() => signOut(auth).then(() => navigate('/'))}
+              onClick={() => signOut(auth).then(() => {
+                localStorage.removeItem('argu_student_id');
+                navigate('/');
+              })}
               className="mt-6 text-xs text-gray-400 underline"
             >
-              다른 계정으로 로그인
+              로그아웃 후 다시 시도
             </button>
           )}
         </motion.div>
@@ -107,7 +109,8 @@ export default function AdminDashboard() {
   const handleUpdatePassword = async () => {
     if (!newPassword) return;
     try {
-      await setDoc(doc(db, 'config', 'admin'), { adminPassword: newPassword });
+      // Use setDoc with merge to ensure it works even if doc is missing
+      await setDoc(doc(db, 'config', 'admin'), { adminPassword: newPassword }, { merge: true });
       alert('비밀번호가 변경되었습니다!');
       setNewPassword('');
     } catch (error) {
@@ -132,6 +135,7 @@ export default function AdminDashboard() {
         role: 'student',
         uid: user.uid
       });
+      localStorage.setItem('argu_student_id', virtualId);
       navigate(path);
     } catch (error) {
       console.error('Virtual test start failed:', error);

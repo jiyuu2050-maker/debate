@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, handleFirestoreError, OperationType } from '../firebase';
-import { collection, onSnapshot, query, orderBy, doc, updateDoc, getDocs, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, getDocs, where, setDoc } from 'firebase/firestore';
 import { signInAnonymously, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { ShieldCheck } from 'lucide-react';
 import { Student } from '../types';
@@ -20,7 +20,7 @@ export default function LandingPage() {
 
   // Admin Login State
   const [adminPassword, setAdminPassword] = useState('');
-  const [storedAdminPassword, setStoredAdminPassword] = useState(import.meta.env.VITE_INITIAL_ADMIN_PASSWORD || '');
+  const [storedAdminPassword, setStoredAdminPassword] = useState(import.meta.env.VITE_INITIAL_ADMIN_PASSWORD || '0000');
   const [isLoggingInAdmin, setIsLoggingInAdmin] = useState(false);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function LandingPage() {
     // Fetch admin password
     const unsubConfig = onSnapshot(doc(db, 'config', 'admin'), (snap) => {
       if (snap.exists()) {
-        setStoredAdminPassword(snap.data().adminPassword || import.meta.env.VITE_INITIAL_ADMIN_PASSWORD || '');
+        setStoredAdminPassword(snap.data().adminPassword || import.meta.env.VITE_INITIAL_ADMIN_PASSWORD || '0000');
       }
     });
 
@@ -100,25 +100,29 @@ export default function LandingPage() {
 
     setIsLoggingInAdmin(true);
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      // AuthProvider handles the redirection once isAdmin is true
+      // 1. Sign in anonymously if not already
+      let currentUser = auth.currentUser;
+      if (!currentUser) {
+        const cred = await signInAnonymously(auth);
+        currentUser = cred.user;
+      }
+
+      // 2. Register UID as current admin in Firestore (Security Rules will verify via password_proof)
+      await setDoc(doc(db, 'config', 'admin'), { 
+        activeAdminUid: currentUser.uid, 
+        password_proof: adminPassword 
+      }, { merge: true });
+
+      // 3. Clear password proof immediately (Security Rules don't need it persisted permanently)
+      // Actually, we can leave it or clear it. Let's just navigate.
+      
+      console.log('Admin authenticated via password successfully.');
       navigate('/admin');
     } catch (error) {
       console.error(error);
-      alert('관리자 인증 중 오류가 발생했습니다.');
+      alert('관리자 인증 중 오류가 발생했습니다. (사유: ' + (error instanceof Error ? error.message : '알 수 없음') + ')');
     } finally {
       setIsLoggingInAdmin(false);
-    }
-  };
-
-  const handleGoogleOnlyLogin = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      navigate('/admin');
-    } catch (error) {
-       console.error(error);
     }
   };
 
@@ -214,14 +218,6 @@ export default function LandingPage() {
             <ShieldCheck size={20} />
             {isLoggingInAdmin ? '관리자 인증 중...' : '관리자 로그인'}
           </button>
-          <div className="text-center">
-            <button 
-              onClick={handleGoogleOnlyLogin}
-              className="text-[11px] text-blue-400 hover:text-blue-600 font-medium underline underline-offset-4"
-            >
-              Google 계정으로 로그인 (암호 분실 시)
-            </button>
-          </div>
         </section>
       </motion.div>
     </div>

@@ -23,9 +23,16 @@ export default function StudentWorkspace() {
 
   useEffect(() => {
     const id = localStorage.getItem('argu_student_id');
-    if (!id) navigate('/login');
-    setStudentId(id);
-  }, []);
+    if (!id && !studentProfile && !loading) {
+      navigate('/');
+    }
+    if (id) {
+      setStudentId(id);
+    } else if (studentProfile) {
+      setStudentId(studentProfile.id);
+      localStorage.setItem('argu_student_id', studentProfile.id);
+    }
+  }, [studentProfile, loading]);
 
   // Sync profile manually because student isn't technically "authenticated" via Firebase Auth in my simple logic yet
   // Actually, I should have linked it. Let's just fetch it.

@@ -21,6 +21,7 @@ export interface Argument {
   id: string;
   studentId: string;
   studentName: string;
+  side: 'pro' | 'con';
   claim: string;
   reason: string;
   evidence: string;
@@ -28,6 +29,17 @@ export interface Argument {
   feedback: string;
   createdAt: string;
   battleId?: string;
+  rebuttals?: Rebuttal[];
+}
+
+export interface Rebuttal {
+  id: string;
+  studentId: string;
+  studentName: string;
+  content: string; // The rebuttal or question
+  score: number; // AI score of the rebuttal
+  feedback: string;
+  createdAt: string;
 }
 
 export interface Battle {
@@ -35,8 +47,11 @@ export interface Battle {
   type: string;
   teamA: string[]; // List of student IDs
   teamB: string[]; // List of student IDs
+  teamASide?: 'pro' | 'con';
+  teamBSide?: 'pro' | 'con';
   hpA: number;
   hpB: number;
   status: 'ongoing' | 'finished';
   winner?: string;
+  currentTurn?: string; // UID of the student whose turn it is
 }
