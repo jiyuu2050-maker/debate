@@ -28,10 +28,18 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      let adminPath = /databases/$(database)/documents/config/admin;
       return isAuthenticated() && (
         (request.auth.token.email == "jiyuu2050@gmail.com" && request.auth.token.email_verified == true) ||
-        get(/databases/$(database)/documents/config/admin).data.activeAdminUid == request.auth.uid
+        (exists(adminPath) && get(adminPath).data.activeAdminUid == request.auth.uid)
       );
+    }
+
+    function getAdminPassword() {
+      let adminPath = /databases/$(database)/documents/config/admin;
+      return exists(adminPath) && ("adminPassword" in get(adminPath).data) 
+        ? get(adminPath).data.adminPassword 
+        : "0000";
     }
 
     function isValidStudent(data) {
@@ -53,8 +61,10 @@ service cloud.firestore {
 
     match /config/admin {
       allow read: if true;
-      allow create: if request.resource.data.password_proof == "0000";
-      allow update: if isAdmin() || (request.resource.data.password_proof == resource.data.adminPassword);
+      allow create: if request.resource.data.password_proof == '0000' || request.resource.data.password_proof == request.resource.data.adminPassword;
+      allow update: if isAdmin() || 
+                    (request.resource.data.password_proof == '0000' && (!('adminPassword' in resource.data))) ||
+                    (request.resource.data.password_proof == resource.data.adminPassword);
     }
 
     match /students/{studentId} {
