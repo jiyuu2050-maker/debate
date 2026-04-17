@@ -17,6 +17,7 @@ export default function LandingPage() {
   const [studentNumber, setStudentNumber] = useState('');
   const [studentName, setStudentName] = useState('');
   const [isStudentLoggingIn, setIsStudentLoggingIn] = useState(false);
+  const [lesson, setLesson] = useState<any>(null);
 
   // Admin Login State
   const [adminPassword, setAdminPassword] = useState('');
@@ -29,9 +30,13 @@ export default function LandingPage() {
     const unsubStudents = onSnapshot(q, (snapshot) => {
       const studentData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Student));
       setStudents(studentData);
-      
-      const uniqueClasses = Array.from(new Set(studentData.map(s => s.class))).sort();
-      setClasses(uniqueClasses);
+    });
+
+    // Fetch lesson info
+    const unsubLesson = onSnapshot(doc(db, 'lessons', 'current'), (snap) => {
+      if (snap.exists()) {
+        setLesson(snap.data());
+      }
     });
 
     // Fetch admin password
@@ -46,6 +51,20 @@ export default function LandingPage() {
       unsubConfig();
     };
   }, []);
+
+  useEffect(() => {
+    let uniqueClasses = Array.from(new Set(students.map(s => s.class))).sort();
+    
+    if (lesson?.targetClass) {
+      // If a specific class is targeted for the lesson, only show that one
+      if (uniqueClasses.includes(lesson.targetClass)) {
+        uniqueClasses = [lesson.targetClass];
+        setSelectedClass(lesson.targetClass);
+      }
+    }
+    
+    setClasses(uniqueClasses);
+  }, [students, lesson]);
 
   const handleStudentLogin = async (e: React.FormEvent) => {
     e.preventDefault();

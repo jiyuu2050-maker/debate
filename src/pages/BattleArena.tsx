@@ -231,152 +231,222 @@ export default function BattleArena() {
       </motion.div>
 
       {/* Header Stats */}
-      <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-[2rem] shadow-sm border">
-        <div className="flex items-center gap-4">
-          <div className="text-5xl">{studentProfile?.emoji}</div>
-          <div>
-            <div className="text-sm font-bold text-gray-400">나 ({studentProfile?.name})</div>
-            <div className="w-48 h-4 bg-gray-100 rounded-full overflow-hidden mt-1 border">
-              <motion.div animate={{ width: `${myHp}%` }} className={`h-full ${myHp < 30 ? 'bg-red-500' : 'bg-green-500'}`} />
-            </div>
-            <span className="text-xs font-bold text-gray-500">{myHp}/100</span>
-          </div>
+      <div className="flex justify-between items-stretch gap-6 mb-8 mt-2">
+        <div className="flex-1 bg-white p-6 rounded-[2.5rem] shadow-sm border flex items-center gap-6">
+           <div className="w-24 h-24 bg-gray-50 rounded-[2rem] flex items-center justify-center text-6xl shadow-inner border border-white">
+              {studentProfile?.emoji}
+           </div>
+           <div className="flex-1">
+              <div className="flex justify-between items-end mb-2">
+                 <span className="font-black text-gray-800 text-lg">나 ({studentProfile?.name})</span>
+                 <span className="text-sm font-black text-pink-500">{myHp} / 100 HP</span>
+              </div>
+              <div className="h-4 bg-gray-100 rounded-full overflow-hidden border">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${myHp}%` }} 
+                  className={`h-full ${myHp < 30 ? 'bg-red-500' : 'bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.4)]'}`} 
+                />
+              </div>
+           </div>
         </div>
-        <div className="text-4xl font-black italic text-gray-200">⚔️</div>
-        <div className="flex items-center gap-4 text-right">
-          <div>
-            <div className="text-sm font-bold text-gray-400">상대 ({opponent?.name || '???'})</div>
-            <div className="w-48 h-4 bg-gray-100 rounded-full overflow-hidden mt-1 border">
-              <motion.div animate={{ width: `${oppHp}%` }} className={`h-full ${oppHp < 30 ? 'bg-red-500' : 'bg-blue-500'}`} />
-            </div>
-            <span className="text-xs font-bold text-gray-500">{oppHp}/100</span>
-          </div>
-          <div className="text-5xl">{opponent?.emoji || '❔'}</div>
+
+        <div className="flex items-center justify-center px-6">
+           <div className="w-16 h-16 bg-[#555843] rounded-full flex items-center justify-center text-white shadow-xl rotate-12 border-4 border-white">
+              <Swords size={32} />
+           </div>
+        </div>
+
+        <div className="flex-1 bg-white p-6 rounded-[2.5rem] shadow-sm border flex items-center gap-6 flex-row-reverse text-right">
+           <div className="w-24 h-24 bg-gray-50 rounded-[2rem] flex items-center justify-center text-6xl shadow-inner border border-white">
+              {opponent?.emoji || '❔'}
+           </div>
+           <div className="flex-1 text-left">
+              <div className="flex justify-between items-end mb-2 flex-row-reverse">
+                 <span className="font-black text-gray-800 text-lg">상대 ({opponent?.name || '???'})</span>
+                 <span className="text-sm font-black text-blue-500">{oppHp} / 100 HP</span>
+              </div>
+              <div className="h-4 bg-gray-100 rounded-full overflow-hidden border">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${oppHp}%` }} 
+                  className={`h-full ${oppHp < 30 ? 'bg-red-500' : 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.4)]'}`} 
+                />
+              </div>
+           </div>
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 overflow-hidden">
-        {/* Battle Stage (Visual) */}
-        <div className="relative bg-white rounded-[3rem] shadow-inner border overflow-hidden flex items-center justify-center p-12 min-h-[400px]">
-           {/* Arena Decor */}
-           <div className="absolute inset-x-0 bottom-0 h-32 bg-gray-50/50" />
-           
-           <motion.div 
-             animate={{ x: isMeTeamA ? -100 : 100, y: [0, -10, 0] }}
-             transition={{ y: { repeat: Infinity, duration: 2 } }}
-             className="text-[12rem] z-10 filter drop-shadow-2xl relative"
-           >
-             {/* Side Badge */}
-             <div className={`absolute -top-16 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-black whitespace-nowrap border-2 shadow-sm ${mySide === 'pro' ? 'bg-orange-100 text-orange-600 border-orange-200' : 'bg-blue-100 text-blue-600 border-blue-200'}`}>
-                {mySide === 'pro' ? '찬성 (PRO)' : '반대 (CON)'}
-             </div>
-             {studentProfile?.emoji}
-             {/* My Post-its */}
-             <div className="absolute -top-10 -left-20 flex flex-col gap-2">
-                {argumentsList.filter(a => a.studentId === studentProfile?.id).slice(0, 3).map((arg, idx) => (
-                  <motion.div 
-                    key={arg.id} 
-                    initial={{ scale: 0, rotate: -5 }} 
-                    animate={{ scale: 1 }}
-                    className={`p-3 w-40 text-xs font-bold shadow-md rounded-sm transform rotate-${idx * 2} ${arg.side === 'pro' ? 'bg-yellow-100' : 'bg-blue-100'}`}
-                  >
-                    "{arg.reason}"
-                  </motion.div>
-                ))}
-             </div>
-           </motion.div>
-
-           <motion.div 
-             animate={{ x: isMeTeamA ? 100 : -100, y: [0, -12, 0] }}
-             transition={{ y: { repeat: Infinity, duration: 2.3 } }}
-             className="text-[12rem] z-10 filter drop-shadow-2xl relative"
-           >
-             {/* Side Badge */}
-             <div className={`absolute -top-16 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-black whitespace-nowrap border-2 shadow-sm ${oppSide === 'pro' ? 'bg-orange-100 text-orange-600 border-orange-200' : 'bg-blue-100 text-blue-600 border-blue-200'}`}>
-                {oppSide === 'pro' ? '찬성 (PRO)' : '반대 (CON)'}
-             </div>
-             {opponent?.emoji || '❔'}
-             {/* Opponent Post-its */}
-             <div className="absolute -top-10 -right-20 flex flex-col gap-2">
-                {argumentsList.filter(a => a.studentId === opponent?.id).slice(0, 3).map((arg, idx) => (
-                  <motion.div 
-                    key={arg.id} 
-                    initial={{ scale: 0, rotate: 5 }} 
-                    animate={{ scale: 1 }}
-                    onClick={() => setShowRebuttalModal(arg)}
-                    className={`p-3 w-40 text-xs font-bold shadow-md rounded-sm cursor-help transform rotate-${idx * -2} ${arg.side === 'pro' ? 'bg-yellow-100' : 'bg-blue-100'}`}
-                  >
-                    "{arg.reason}"
-                    <div className="mt-1 text-[8px] text-pink-500 uppercase font-black tracking-tighter">Click to Rebut</div>
-                  </motion.div>
-                ))}
-             </div>
-           </motion.div>
-
-           {/* Feedback Pop-up */}
-           <AnimatePresence>
-             {lastResult && (
-               <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="absolute z-50 bottom-10 inset-x-10 bg-black/80 backdrop-blur-md text-white p-6 rounded-3xl text-center">
-                  <div className="text-3xl font-black text-yellow-400 mb-1">{lastResult.score}점!</div>
-                  <p className="font-bold">{lastResult.feedback}</p>
-               </motion.div>
-             )}
-           </AnimatePresence>
-        </div>
-
-        {/* Action History / Feed */}
-        <div className="bg-white rounded-[3rem] shadow-sm border p-8 overflow-y-auto flex flex-col">
-           <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-black text-gray-800 flex items-center gap-2">
-                 <MessageCircle className="text-pink-500" /> 토론 타임라인
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-8 overflow-hidden">
+        {/* Left: Arguments & Evidence (Timeline) */}
+        <div className="lg:col-span-2 bg-white rounded-[3rem] shadow-sm border p-8 flex flex-col overflow-hidden">
+           <div className="flex justify-between items-center mb-8 border-b pb-6">
+              <h3 className="text-2xl font-black text-gray-800 flex items-center gap-3">
+                 <MessageCircle className="text-[#555843]" /> 논증 타임라인
               </h3>
               <button 
                 onClick={() => setShowArgModal(true)}
-                className="px-6 py-3 bg-pink-600 text-white rounded-2xl font-black shadow-lg shadow-pink-100 hover:scale-105 transition-all text-sm"
+                className="px-8 py-4 bg-[#555843] text-white rounded-2xl font-black shadow-lg shadow-gray-200 hover:scale-105 transition-all text-base flex items-center gap-2"
               >
                 + 내 논증 추가
               </button>
            </div>
            
-           <div className="space-y-6 flex-1">
-              {argumentsList.map(arg => (
-                <div key={arg.id} className="border-l-4 border-gray-100 pl-4 py-2 hover:bg-gray-50/50 rounded-r-xl transition-all group">
-                   <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xl">{arg.studentId === studentProfile?.id ? studentProfile.emoji : opponent?.emoji}</span>
-                      <span className="font-bold text-sm text-gray-700">{arg.studentName}</span>
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${arg.side === 'pro' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
-                        {arg.side.toUpperCase()}
-                      </span>
-                   </div>
-                   <p className="text-gray-800 font-medium">"{arg.reason}"</p>
-                   {arg.evidence ? (
-                     <div className="mt-2 bg-gray-50 p-3 rounded-xl border italic text-sm text-gray-600">
-                        <span className="font-black text-blue-500 not-italic mr-1">🔍 근거:</span>
-                        {arg.evidence}
-                        <div className="mt-1 text-[10px] font-black text-pink-500">AI 점수: {arg.score}점</div>
-                     </div>
-                   ) : arg.studentId === studentProfile?.id && (
-                     <button 
-                       onClick={() => setActiveArgForEvidence(arg)}
-                       className="mt-2 text-xs font-black text-pink-500 underline underline-offset-4"
-                     >
-                       근거 작성하기...
-                     </button>
-                   )}
-
-                   {/* Rebuttals */}
-                   {arg.rebuttals && arg.rebuttals.map(reb => (
-                     <div key={reb.id} className="ml-8 mt-3 bg-pink-50/50 p-3 rounded-2xl border border-pink-100 text-xs">
-                        <div className="flex items-center gap-2 mb-1">
-                           <span className="font-black text-pink-600">{reb.studentName}의 반박:</span>
-                           <span className="bg-pink-200 text-pink-700 px-2 py-0.5 rounded-full font-black text-[8px]">{reb.score}점</span>
-                        </div>
-                        <p className="text-gray-700">"{reb.content}"</p>
-                        <p className="mt-1 text-[9px] text-gray-400 italic">"{reb.feedback}"</p>
-                     </div>
-                   ))}
+           <div className="space-y-10 flex-1 overflow-y-auto pr-4 custom-scrollbar">
+              {argumentsList.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-gray-300 gap-4">
+                   <MessageCircle size={64} opacity={0.2} />
+                   <p className="font-bold">아직 제출된 논증이 없습니다. 첫 번째 주장을 시작해 보세요!</p>
                 </div>
-              ))}
+              )}
+              {argumentsList.map(arg => {
+                const isMine = arg.studentId === studentProfile?.id;
+                return (
+                  <div key={arg.id} className={`relative p-8 rounded-[2rem] border-2 transition-all ${isMine ? 'bg-orange-50/30 border-orange-100' : 'bg-blue-50/30 border-blue-100'}`}>
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="flex items-center gap-3">
+                         <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-2xl shadow-sm border overflow-hidden">
+                            {arg.studentId === studentProfile?.id ? studentProfile.emoji : opponent?.emoji}
+                         </div>
+                         <div>
+                            <div className="font-black text-gray-800">{arg.studentName}</div>
+                            <div className={`text-[10px] font-black px-2 py-0.5 rounded-full inline-block ${arg.side === 'pro' ? 'bg-orange-400 text-white' : 'bg-blue-400 text-white'}`}>
+                              {arg.side === 'pro' ? 'CHAN-SEONG (PRO)' : 'BAN-DAE (CON)'}
+                            </div>
+                         </div>
+                      </div>
+                      {arg.score > 0 && (
+                        <div className="bg-white px-4 py-2 rounded-2xl border-2 border-dashed border-gray-200 font-black text-xl text-[#555843]">
+                           {arg.score}점
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Reason Section - MAKE IT BIG */}
+                    <div className="mb-6">
+                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">이유 (Reason)</span>
+                       <p className="text-2xl font-black text-gray-900 leading-tight">
+                         "{arg.reason}"
+                       </p>
+                    </div>
+
+                    {/* Evidence Section */}
+                    {arg.evidence ? (
+                      <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-gray-100 shadow-sm">
+                         <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-2 block">근거 (Evidence)</span>
+                         <p className="text-gray-700 font-medium leading-relaxed whitespace-pre-wrap">
+                            {arg.evidence}
+                         </p>
+                         <div className="mt-4 pt-4 border-t border-dashed flex items-center gap-2">
+                            <Sparkles size={14} className="text-blue-500" />
+                            <p className="text-xs font-bold text-gray-400 italic">"{arg.feedback}"</p>
+                         </div>
+                      </div>
+                    ) : (
+                      isMine ? (
+                        <button 
+                          onClick={() => setActiveArgForEvidence(arg)}
+                          className="w-full py-4 bg-white border-2 border-dashed border-orange-200 text-orange-600 rounded-2xl font-black text-sm hover:bg-orange-100 transition-all flex items-center justify-center gap-2"
+                        >
+                          <Sparkles size={18} /> 근거 보강하기 (공격 포인트!)
+                        </button>
+                      ) : (
+                        <div className="w-full py-4 bg-gray-50 border-2 border-dashed border-gray-200 text-gray-300 rounded-2xl font-black text-xs text-center">
+                           근거를 기다리는 중...
+                        </div>
+                      )
+                    )}
+
+                    {/* Rebuttals Section */}
+                    {!isMine && !arg.evidence && (
+                       <button 
+                         onClick={() => setShowRebuttalModal(arg)}
+                         className="absolute -right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-pink-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all border-4 border-white"
+                         title="반박하기"
+                       >
+                         <Swords size={20} />
+                       </button>
+                    )}
+
+                    {arg.rebuttals && arg.rebuttals.length > 0 && (
+                      <div className="mt-8 space-y-4">
+                         <div className="flex items-center gap-2 text-xs font-black text-pink-500">
+                            <MessageCircle size={14} /> 반론/질의 {arg.rebuttals.length}개
+                         </div>
+                         {arg.rebuttals.map(reb => (
+                           <div key={reb.id} className="ml-4 bg-pink-100/30 p-4 rounded-2xl border border-pink-100">
+                              <div className="flex justify-between items-center mb-1">
+                                 <span className="font-black text-pink-700 text-xs">{reb.studentName}</span>
+                                 <span className="bg-pink-500 text-white px-2 py-0.5 rounded-full font-black text-[8px]">{reb.score}점</span>
+                              </div>
+                              <p className="text-gray-700 text-xs font-medium">"{reb.content}"</p>
+                           </div>
+                         ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+           </div>
+        </div>
+
+        {/* Right: Battle Arena Visual */}
+        <div className="lg:col-span-1 flex flex-col gap-8 h-full overflow-hidden">
+           <div className="flex-1 relative bg-white rounded-[3rem] shadow-inner border overflow-hidden flex items-center justify-center p-8 min-h-[400px]">
+              {/* Arena Decor */}
+              <div className="absolute inset-x-0 bottom-12 h-16 bg-gray-50 flex flex-col items-center justify-center border-y border-gray-100">
+                 <div className="text-[10px] font-black text-gray-200 uppercase tracking-[1em] mb-1">Battle Arena</div>
+                 <div className="w-32 h-1 bg-gray-100 rounded-full"></div>
+              </div>
+              
+              <div className="flex items-center justify-center gap-12 relative w-full h-full">
+                <motion.div 
+                  animate={{ x: isMeTeamA ? -10 : 10, y: [0, -20, 0], scale: [1, 1.05, 1] }}
+                  transition={{ y: { repeat: Infinity, duration: 2 }, scale: { repeat: Infinity, duration: 4 } }}
+                  className="relative z-10"
+                >
+                  <div className={`absolute -top-12 left-1/2 -translate-x-1/2 px-4 py-1 rounded-xl text-[10px] font-black whitespace-nowrap border-2 shadow-sm ${mySide === 'pro' ? 'bg-orange-500 text-white border-white' : 'bg-blue-500 text-white border-white'}`}>
+                      {mySide === 'pro' ? '찬성' : '반대'}
+                  </div>
+                  <div className="text-[10rem] filter drop-shadow-2xl">{studentProfile?.emoji}</div>
+                </motion.div>
+
+                <div className="text-6xl text-gray-100 font-black italic select-none">VS</div>
+
+                <motion.div 
+                  animate={{ x: isMeTeamA ? 10 : -10, y: [0, -25, 0], scale: [1, 1.05, 1] }}
+                  transition={{ y: { repeat: Infinity, duration: 2.3 }, scale: { repeat: Infinity, duration: 4.5 } }}
+                  className="relative z-10"
+                >
+                  <div className={`absolute -top-12 left-1/2 -translate-x-1/2 px-4 py-1 rounded-xl text-[10px] font-black whitespace-nowrap border-2 shadow-sm ${oppSide === 'pro' ? 'bg-orange-500 text-white border-white' : 'bg-blue-500 text-white border-white'}`}>
+                      {oppSide === 'pro' ? '찬성' : '반대'}
+                  </div>
+                  <div className="text-[10rem] filter drop-shadow-2xl opacity-90">{opponent?.emoji || '❔'}</div>
+                </motion.div>
+              </div>
+
+              {/* Feedback Pop-up */}
+              <AnimatePresence>
+                {lastResult && (
+                  <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute z-50 bottom-8 left-1/2 -translate-x-1/2 w-[80%] bg-black/90 backdrop-blur-md text-white px-8 py-6 rounded-[2rem] shadow-2xl border border-white/10">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-3xl font-black text-yellow-400">
+                         {lastResult.score}
+                      </div>
+                      <p className="flex-1 font-bold text-sm leading-relaxed">{lastResult.feedback}</p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+           </div>
+           
+           {/* Current Topic Reminder */}
+           <div className="bg-[#555843] rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-12 -mt-12"></div>
+              <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-4">Current Topic</p>
+              <h4 className="text-lg font-black leading-tight">
+                 {battle.topic || '토론 주제가 설정되지 않았습니다.'}
+              </h4>
            </div>
         </div>
       </div>

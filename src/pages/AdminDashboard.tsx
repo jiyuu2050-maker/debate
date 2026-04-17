@@ -28,6 +28,9 @@ export default function AdminDashboard() {
   const [newPassword, setNewPassword] = useState('');
   const [csvEncoding, setCsvEncoding] = useState<string>('UTF-8');
   const [lastUploadedFile, setLastUploadedFile] = useState<File | null>(null);
+  const [targetClass, setTargetClass] = useState('');
+  const [availableClasses, setAvailableClasses] = useState<string[]>([]);
+  const [selectedClass, setSelectedClass] = useState('');
 
   useEffect(() => {
     // Fetch global config
@@ -46,8 +49,17 @@ export default function AdminDashboard() {
       setTopic(lesson.topic || '');
       setMode(lesson.mode || 'individual');
       setGameType(lesson.gameType || 'pet-battle');
+      setSelectedClass(lesson.targetClass || '');
     }
   }, [lesson]);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'students'), (snap) => {
+      const classes = Array.from(new Set(snap.docs.map(d => d.data().class))).filter(Boolean).sort();
+      setAvailableClasses(classes as string[]);
+    });
+    return unsub;
+  }, []);
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-screen p-10 text-center gap-4">
@@ -154,11 +166,12 @@ export default function AdminDashboard() {
     if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
       const reader = new FileReader();
       reader.onload = (evt) => {
-        const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
+        const bstr = evt.target ? evt.target.result : null;
+        if (!bstr) return;
+        const wb = XLSX.read(bstr, { type: 'binary', codepage: 949 }); // Use CP949 as a baseline for non-unicode Excel
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws);
+        const data = XLSX.utils.sheet_to_json(ws, { defval: "" });
         console.log('Excel Parse complete:', data);
         setCsvData(data);
       };
@@ -214,7 +227,7 @@ export default function AdminDashboard() {
           return foundKey ? String(row[foundKey] || '').trim() : '';
         };
 
-        const classVal = getVal(['반', 'class', 'grade', 'Grade']);
+        const classVal = targetClass || getVal(['반', 'class', 'grade', 'Grade']);
         const numberVal = getVal(['번호', 'number', 'no', 'No', 'Number']);
         const nameVal = getVal(['이름', 'name', 'Name']);
 
@@ -266,6 +279,7 @@ export default function AdminDashboard() {
         mode,
         gameType,
         status,
+        targetClass: selectedClass,
         startedAt: status === 'started' ? new Date().toISOString() : lesson?.startedAt
       });
     } catch (error) {
@@ -375,20 +389,39 @@ export default function AdminDashboard() {
                     >EUC-KR / CP949 (Excel)</button>
                   </div>
                 </div>
+
                 <div className="space-y-6">
-                  <div className="border-4 border-dashed border-gray-100 rounded-[2rem] p-10 text-center hover:border-green-200 transition-all relative group bg-gray-50/50">
+                  {/* Step 1: Class Selection */}
+                  <div className="bg-green-50/50 p-6 rounded-2xl border border-green-100">
+                    <label className="block text-sm font-bold text-green-800 mb-2">1. 학급(반) 지정</label>
+                    <p className="text-xs text-green-600 mb-4 font-medium opacity-80">업로드할 명단의 대상을 지정해 주세요. (예: 1, 2, 3...)</p>
+                    <div className="flex gap-2">
+                       <input 
+                         type="text" 
+                         placeholder="반 입력 (예: 1)"
+                         className="flex-1 px-4 py-3 bg-white border border-green-200 rounded-xl font-bold outline-none focus:ring-2 ring-green-500/20"
+                         value={targetClass}
+                         onChange={(e) => setTargetClass(e.target.value)}
+                       />
+                       <div className="bg-white px-4 py-3 border border-green-200 rounded-xl font-bold text-gray-400">반</div>
+                    </div>
+                  </div>
+
+                  {/* Step 2: File Upload */}
+                  <div className={`border-4 border-dashed rounded-[2rem] p-10 text-center transition-all relative group ${targetClass ? 'bg-gray-50/50 border-gray-100 hover:border-green-200' : 'bg-gray-100 border-gray-200 opacity-50 grayscale'}`}>
                     <input 
                       type="file" 
                       accept=".csv, .xlsx, .xls"
                       onChange={handleFileUpload}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      disabled={!targetClass}
+                      className={`absolute inset-0 opacity-0 ${targetClass ? 'cursor-pointer' : 'cursor-not-allowed'}`}
                     />
-                    <Upload className="mx-auto text-gray-300 mb-4 group-hover:text-green-300 transition-colors" size={48} />
+                    <Upload className={`mx-auto mb-4 group-hover:text-green-300 transition-colors ${targetClass ? 'text-gray-300' : 'text-gray-200'}`} size={48} />
                     <p className="text-lg font-bold text-gray-500">
-                      {csvData.length > 0 ? `${csvData.length}명 로드됨` : '엑셀 또는 CSV 파일 업로드'}
+                      {!targetClass ? '먼저 반을 입력해 주세요' : csvData.length > 0 ? `${csvData.length}명 로드됨` : '엑셀 또는 CSV 파일 업로드'}
                     </p>
                     <p className="text-sm text-gray-400 mt-2">지원 형식: .xlsx, .xls, .csv</p>
-                    <p className="text-[10px] text-gray-400">필수 항목: 반, 번호, 이름</p>
+                    <p className="text-[10px] text-gray-400">데이터 양식: 번호, 이름 (반은 자동 지정됨)</p>
                   </div>
 
                   {/* Data Preview Area */}
@@ -460,77 +493,121 @@ export default function AdminDashboard() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
               <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-white">
                 <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
-                  <Play size={22} className="text-blue-500" /> 수업 설정
+                  <Play size={22} className="text-[#005bb5]" /> 수업 설정
                 </h3>
                 <div className="space-y-8">
+                  {/* Topic Input */}
                   <div>
                     <label className="block text-sm font-bold text-gray-400 mb-3 ml-1">토론 주제</label>
-                    <input 
-                      type="text"
-                      placeholder="예: 초등학생의 스마트폰 사용은 제한되어야 한다."
-                      className="w-full px-6 py-5 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-blue-200 outline-none font-bold text-lg transition-all"
-                      value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                    />
+                    <div className="bg-[#f8f9fa] p-8 rounded-3xl border border-transparent focus-within:border-blue-100 transition-all">
+                      <input 
+                        type="text"
+                        placeholder="예: 초등학생의 스마트폰 사용은 제한되어야 한다."
+                        className="w-full bg-transparent outline-none font-bold text-xl text-gray-800 placeholder:text-gray-300"
+                        value={topic}
+                        onChange={(e) => setTopic(e.target.value)}
+                      />
+                    </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-6">
+                  {/* Three Column Grid: Mode, Type, and Class (New) */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div>
                       <label className="block text-sm font-bold text-gray-400 mb-3 ml-1">게임 모드</label>
-                      <div className="flex bg-gray-50 p-1.5 rounded-2xl">
+                      <div className="flex bg-[#f8f9fa] p-1.5 rounded-2xl relative">
                         <button 
                           onClick={() => setMode('individual')}
-                          className={`flex-1 py-4 rounded-xl font-bold transition-all ${mode === 'individual' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400'}`}
+                          className={`flex-1 py-4 rounded-xl font-bold transition-all relative z-10 ${mode === 'individual' ? 'text-blue-600' : 'text-gray-400'}`}
                         >개인전</button>
                         <button 
                           onClick={() => setMode('team')}
-                          className={`flex-1 py-4 rounded-xl font-bold transition-all ${mode === 'team' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400'}`}
+                          className={`flex-1 py-4 rounded-xl font-bold transition-all relative z-10 ${mode === 'team' ? 'text-blue-600' : 'text-gray-400'}`}
                         >단체전</button>
+                        <motion.div 
+                          layoutId="mode-bg"
+                          className="absolute inset-y-1.5 bg-white shadow-sm rounded-xl"
+                          initial={false}
+                          animate={{ 
+                            left: mode === 'individual' ? '0.375rem' : '50%',
+                            width: 'calc(50% - 0.375rem)'
+                          }}
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
+                        />
                       </div>
                     </div>
+
                     <div>
                       <label className="block text-sm font-bold text-gray-400 mb-3 ml-1">게임 종류</label>
-                      <div className="flex bg-gray-50 p-1.5 rounded-2xl">
+                      <div className="flex bg-[#f8f9fa] p-1.5 rounded-2xl relative">
                         <button 
                           onClick={() => setGameType('post-it')}
-                          className={`flex-1 py-4 rounded-xl font-bold transition-all ${gameType === 'post-it' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400'}`}
+                          className={`flex-1 py-4 rounded-xl font-bold transition-all relative z-10 ${gameType === 'post-it' ? 'text-blue-600' : 'text-gray-400'}`}
                         >포스트잇</button>
                         <button 
                           onClick={() => setGameType('pet-battle')}
-                          className={`flex-1 py-4 rounded-xl font-bold transition-all ${gameType === 'pet-battle' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400'}`}
+                          className={`flex-1 py-4 rounded-xl font-bold transition-all relative z-10 ${gameType === 'pet-battle' ? 'text-blue-600' : 'text-gray-400'}`}
                         >펫 배틀</button>
+                        <motion.div 
+                          layoutId="type-bg"
+                          className="absolute inset-y-1.5 bg-white shadow-sm rounded-xl"
+                          initial={false}
+                          animate={{ 
+                            left: gameType === 'post-it' ? '0.375rem' : '50%',
+                            width: 'calc(50% - 0.375rem)'
+                          }}
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-gray-400 mb-3 ml-1">대상 학급(반) 선택</label>
+                      <div className="relative">
+                        <select 
+                          value={selectedClass}
+                          onChange={(e) => setSelectedClass(e.target.value)}
+                          className="w-full px-6 py-4 bg-[#f8f9fa] rounded-2xl border-2 border-transparent focus:border-blue-100 outline-none font-bold text-lg appearance-none cursor-pointer text-gray-700"
+                        >
+                          <option value="">전체 학급</option>
+                          {availableClasses.map(cls => (
+                            <option key={cls} value={cls}>{cls}반</option>
+                          ))}
+                        </select>
+                        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-300">
+                           <Users size={18} />
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-4 pt-6">
+                  <div className="flex gap-4 pt-10">
                     {lesson?.status === 'started' ? (
                       <button 
                         onClick={() => updateLesson('finished')}
-                        className="flex-1 py-5 bg-red-100 text-red-600 rounded-2xl font-black text-xl flex items-center justify-center gap-3 hover:bg-red-200 transition-all border-2 border-transparent"
+                        className="flex-1 py-6 bg-red-50 text-red-500 rounded-[2rem] font-black text-xl flex items-center justify-center gap-3 hover:bg-red-100 transition-all border-2 border-transparent"
                       >
                         <Square size={24} fill="currentColor" /> 수업 종료
                       </button>
                     ) : (
                       <button 
                         onClick={() => updateLesson('started')}
-                        className="flex-1 py-5 bg-blue-600 text-white rounded-2xl font-black text-xl flex items-center justify-center gap-3 hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all"
+                        className="flex-1 py-6 bg-blue-600 text-white rounded-[2rem] font-black text-xl flex items-center justify-center gap-3 hover:opacity-90 shadow-xl shadow-blue-100 transition-all"
                       >
                         <Play size={24} fill="currentColor" /> 수업 시작!
                       </button>
                     )}
                     <button 
                       onClick={() => updateLesson(lesson?.status || 'ready')}
-                      className="px-8 py-5 bg-gray-100 text-gray-500 rounded-2xl font-black hover:bg-gray-200 transition-all"
+                      className="px-10 py-6 bg-gray-50 text-gray-400 rounded-[2rem] font-black hover:bg-gray-100 transition-all border border-gray-100"
+                      title="설정 저장"
                     >
-                      <Save size={24} />
+                      <Save size={28} />
                     </button>
                   </div>
                 </div>
               </div>
             </motion.div>
           )}
-
           {activeSection === 'test' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
               <div className="bg-white p-12 rounded-[2.5rem] shadow-sm border border-white">

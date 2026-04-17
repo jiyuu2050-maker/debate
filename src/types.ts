@@ -15,6 +15,7 @@ export interface Lesson {
   gameType: 'post-it' | 'pet-battle';
   status: 'ready' | 'started' | 'finished';
   startedAt?: string;
+  targetClass?: string;
 }
 
 export interface Argument {
