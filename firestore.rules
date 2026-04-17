@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: students
+    // Fields: id, name, class, number, emoji, hp, lastActive, role
+    //
+    // Collection: lessons
+    // Fields: topic, mode, gameType, status, startedAt
+    //
+    // Collection: arguments
+    // Fields: studentId, studentName, claim, reason, evidence, score, feedback, createdAt, battleId
+    //
+    // Collection: battles
+    // Fields: type, teamA, teamB, hpA, hpB, status, winner
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+             (request.auth.token.email == "jiyuu2050@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    function isStudent(studentId) {
+      return isAuthenticated() && (request.auth.uid == studentId || (get(/databases/$(database)/documents/students/$(studentId)).data.uid == request.auth.uid));
+    }
+
+    function isValidStudent(data) {
+      return data.keys().hasAll(['id', 'name', 'class', 'number']) &&
+             data.name is string && data.name.size() < 50 &&
+             data.class is string && data.number is string;
+    }
+
+    function isValidArgument(data) {
+      return data.keys().hasAll(['studentId', 'claim', 'reason', 'evidence']) &&
+             data.claim is string && data.claim.size() < 1000 &&
+             data.reason is string && data.reason.size() < 1000 &&
+             data.evidence is string && data.evidence.size() < 1000;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /config/admin {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /students/{studentId} {
+      allow read: if true;
+      allow create, update: if isAdmin() || (isAuthenticated() && (!('uid' in resource.data) || resource.data.uid == request.auth.uid));
+      allow delete: if isAdmin();
+    }
+
+    match /lessons/{lessonId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /arguments/{argumentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidArgument(request.resource.data);
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.studentId == request.auth.uid && isValidArgument(request.resource.data));
+      allow delete: if isAdmin();
+    }
+
+    match /battles/{battleId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() || isAuthenticated();
+      allow delete: if isAdmin();
+    }
+  }
+}

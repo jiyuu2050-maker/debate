@@ -1,0 +1,6 @@
+{
+  "name": "Argu-Mon (아규몬)",
+  "description": "학생들이 ‘주장-이유-근거’의 논증 구조로 글을 쓰면, Gemini AI가 채점하여 이모지 펫이 배틀을 벌이는 교육용 게임 웹앱입니다.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

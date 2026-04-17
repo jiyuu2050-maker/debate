@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "Config": {
+      "title": "Config",
+      "description": "Global application configuration.",
+      "type": "object",
+      "properties": {
+        "adminPassword": { "type": "string" }
+      }
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Information about a student enrolled in a class.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID typically [class]-[number]" },
+        "name": { "type": "string" },
+        "class": { "type": "string" },
+        "number": { "type": "string" },
+        "emoji": { "type": "string", "description": "Chosen pet emoji" },
+        "hp": { "type": "number", "description": "Current health points in battle" },
+        "lastActive": { "type": "string", "format": "date-time" },
+        "role": { "type": "string", "enum": ["student", "admin"] }
+      },
+      "required": ["id", "name", "class", "number"]
+    },
+    "Lesson": {
+      "title": "Lesson",
+      "description": "Current lesson settings and state.",
+      "type": "object",
+      "properties": {
+        "topic": { "type": "string" },
+        "mode": { "type": "string", "enum": ["individual", "team"] },
+        "gameType": { "type": "string", "enum": ["post-it", "pet-battle"] },
+        "status": { "type": "string", "enum": ["ready", "started", "finished"] },
+        "startedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Argument": {
+      "title": "Argument",
+      "description": "An argument submitted by a student.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "claim": { "type": "string" },
+        "reason": { "type": "string" },
+        "evidence": { "type": "string" },
+        "score": { "type": "number" },
+        "feedback": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "battleId": { "type": "string" }
+      },
+      "required": ["studentId", "claim", "reason", "evidence"]
+    },
+    "Battle": {
+      "title": "Battle",
+      "description": "A battle session between students or teams.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "teamA": { "type": "array", "items": { "type": "string" } },
+        "teamB": { "type": "array", "items": { "type": "string" } },
+        "hpA": { "type": "number" },
+        "hpB": { "type": "number" },
+        "status": { "type": "string", "enum": ["ongoing", "finished"] },
+        "winner": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Registered students."
+    },
+    "/lessons/current": {
+      "schema": "Lesson",
+      "description": "The active lesson configuration."
+    },
+    "/config/admin": {
+      "schema": "Config",
+      "description": "Admin security configuration."
+    },
+    "/arguments/{argumentId}": {
+      "schema": "Argument",
+      "description": "Submitted arguments."
+    },
+    "/battles/{battleId}": {
+      "schema": "Battle",
+      "description": "Active battle sessions."
+    }
+  }
+}

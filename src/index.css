@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Jua&family=EB+Garamond:ital,wght@1,400;1,700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-jua: "Jua", sans-serif;
+  --font-serif: "EB Garamond", serif;
+}
+
+body {
+  background-color: #f1f3f5;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, .font-title {
+  font-family: var(--font-jua);
+}
+
