@@ -8,6 +8,7 @@ import { Student, Lesson } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Upload, Users, Play, Square, Save, Trash2, LogOut, LayoutDashboard, Key, Download, Target, FileText, BarChart3, ShieldCheck, ArrowLeft, Swords } from 'lucide-react';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import { onSnapshot } from 'firebase/firestore';
 
 type AdminSection = 'class' | 'lesson' | 'test' | 'ai' | 'stats' | 'password';
@@ -143,12 +144,36 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleCsvUpload = (e: ChangeEvent<HTMLInputElement> | File) => {
-    const file = e instanceof File ? e : e.target.files?.[0];
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
-    setLastUploadedFile(file);
+    const fileName = file.name.toLowerCase();
+    
+    // Support for Excel files (.xlsx, .xls)
+    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+        console.log('Excel Parse complete:', data);
+        setCsvData(data);
+      };
+      reader.readAsBinaryString(file);
+    } 
+    // Support for CSV files
+    else if (fileName.endsWith('.csv')) {
+      setLastUploadedFile(file);
+      handleCsvParse(file);
+    } else {
+      alert('지원되지 않는 파일 형식입니다. (.csv, .xlsx, .xls 파일만 가능)');
+    }
+  };
 
+  const handleCsvParse = (file: File) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -167,7 +192,7 @@ export default function AdminDashboard() {
   // Re-parse when encoding changes if we have a file
   useEffect(() => {
     if (lastUploadedFile) {
-      handleCsvUpload(lastUploadedFile);
+      handleCsvParse(lastUploadedFile);
     }
   }, [csvEncoding]);
 
@@ -354,15 +379,16 @@ export default function AdminDashboard() {
                   <div className="border-4 border-dashed border-gray-100 rounded-[2rem] p-10 text-center hover:border-green-200 transition-all relative group bg-gray-50/50">
                     <input 
                       type="file" 
-                      accept=".csv"
-                      onChange={handleCsvUpload}
+                      accept=".csv, .xlsx, .xls"
+                      onChange={handleFileUpload}
                       className="absolute inset-0 opacity-0 cursor-pointer"
                     />
                     <Upload className="mx-auto text-gray-300 mb-4 group-hover:text-green-300 transition-colors" size={48} />
                     <p className="text-lg font-bold text-gray-500">
-                      {csvData.length > 0 ? `${csvData.length}명 로드됨` : 'CSV 파일 업로드'}
+                      {csvData.length > 0 ? `${csvData.length}명 로드됨` : '엑셀 또는 CSV 파일 업로드'}
                     </p>
-                    <p className="text-sm text-gray-400 mt-2">필수 항목: 반, 번호, 이름</p>
+                    <p className="text-sm text-gray-400 mt-2">지원 형식: .xlsx, .xls, .csv</p>
+                    <p className="text-[10px] text-gray-400">필수 항목: 반, 번호, 이름</p>
                   </div>
 
                   {/* Data Preview Area */}
